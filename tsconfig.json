@@ -12,7 +12,8 @@
         "strict": true,
         "noUnusedLocals": true,
         "jsx": "react",
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "moduleResolution": "node"
     },
     "include": ["./src/**/*", "./examples/demo/*"]
 }
