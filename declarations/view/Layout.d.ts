@@ -96,15 +96,15 @@ export interface ILayoutState {
     showEdges?: boolean;
 }
 export interface IIcons {
-    close?: (React.ReactNode | ((tabNode: TabNode) => React.ReactNode));
-    closeTabset?: (React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode));
-    popout?: (React.ReactNode | ((tabNode: TabNode) => React.ReactNode));
-    maximize?: (React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode));
-    restore?: (React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode));
-    more?: (React.ReactNode | ((tabSetNode: (TabSetNode | BorderNode), hiddenTabs: {
+    close?: React.ReactNode | ((tabNode: TabNode) => React.ReactNode);
+    closeTabset?: React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode);
+    popout?: React.ReactNode | ((tabNode: TabNode) => React.ReactNode);
+    maximize?: React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode);
+    restore?: React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode);
+    more?: React.ReactNode | ((tabSetNode: TabSetNode | BorderNode, hiddenTabs: {
         node: TabNode;
         index: number;
-    }[]) => React.ReactNode));
+    }[]) => React.ReactNode);
     edgeArrow?: React.ReactNode;
 }
 export interface ICustomDropDestination {
@@ -123,6 +123,7 @@ export interface ICustomDropDestination {
  */
 export declare class Layout extends React.Component<ILayoutProps, ILayoutState> {
     constructor(props: ILayoutProps);
+    doAction(action: Action): Node | undefined;
     /**
      * Adds a new tab to the given tabset
      * @param tabsetId the id of the tabset where the new tab will be added
@@ -148,7 +149,7 @@ export declare class Layout extends React.Component<ILayoutProps, ILayoutState> 
      * @param node the tab or tabset to drag
      * @param dragText the text to show on the drag panel
      */
-    moveTabWithDragAndDrop(node: (TabNode | TabSetNode), dragText?: string): void;
+    moveTabWithDragAndDrop(node: TabNode | TabSetNode, dragText?: string): void;
     /**
      * Adds a new tab by dragging a labeled panel to the drop location, dragging starts when you
      * mouse down on the panel
