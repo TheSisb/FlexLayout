@@ -60,6 +60,7 @@ export interface ILayoutProps {
     onAuxMouseClick?: NodeMouseEvent;
     onShowOverflowMenu?: ShowOverflowMenuCallback;
     onTabSetPlaceHolder?: TabSetPlaceHolderCallback;
+    onTabMouseEnter?: NodeMouseEvent;
 }
 export interface IFontValues {
     size?: string;

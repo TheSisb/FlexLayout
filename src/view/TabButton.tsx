@@ -16,18 +16,27 @@ export interface ITabButtonProps {
     selected: boolean;
     iconFactory?: IconFactory;
     titleFactory?: TitleFactory;
+    onTabMouseEnter?: (node: TabNode, event: React.MouseEvent<HTMLElement, MouseEvent>) => void;
     icons: IIcons;
     path: string;
 }
 
 /** @internal */
 export const TabButton = (props: ITabButtonProps) => {
-    const { layout, node, selected, iconFactory, titleFactory, icons, path } = props;
+    const { layout, node, selected, iconFactory, titleFactory, onTabMouseEnter, icons, path } = props;
     const selfRef = React.useRef<HTMLDivElement | null>(null);
     const contentRef = React.useRef<HTMLInputElement | null>(null);
 
-    const onMouseDown = (event: React.MouseEvent<HTMLDivElement, MouseEvent> | React.TouchEvent<HTMLDivElement>) => {
+    const handleMouseEnter = React.useCallback(
+        (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
+            if (onTabMouseEnter) {
+                onTabMouseEnter(node, event);
+            }
+        },
+        [onTabMouseEnter, node]
+    );
 
+    const onMouseDown = (event: React.MouseEvent<HTMLDivElement, MouseEvent> | React.TouchEvent<HTMLDivElement>) => {
         if (!isAuxMouseEvent(event) && !layout.getEditingTab()) {
             layout.dragStart(event, undefined, node, node.isEnableDrag(), onClick, onDoubleClick);
         }
@@ -105,14 +114,7 @@ export const TabButton = (props: ITabButtonProps) => {
         const layoutRect = layout.getDomRect();
         const r = selfRef.current?.getBoundingClientRect();
         if (r && layoutRect) {
-            node._setTabRect(
-                new Rect(
-                    r.left - layoutRect.left,
-                    r.top - layoutRect.top,
-                    r.width,
-                    r.height
-                )
-            );
+            node._setTabRect(new Rect(r.left - layoutRect.left, r.top - layoutRect.top, r.width, r.height));
         }
     };
 
@@ -122,10 +124,10 @@ export const TabButton = (props: ITabButtonProps) => {
     };
 
     const onTextBoxKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.code === 'Escape') {
+        if (event.code === "Escape") {
             // esc
             layout.setEditingTab(undefined);
-        } else if (event.code === 'Enter') {
+        } else if (event.code === "Enter") {
             // enter
             layout.setEditingTab(undefined);
             layout.doAction(Actions.renameTab(node.getId(), (event.target as HTMLInputElement).value));
@@ -154,15 +156,9 @@ export const TabButton = (props: ITabButtonProps) => {
 
     const renderState = getRenderStateEx(layout, node, iconFactory, titleFactory);
 
-    let content = renderState.content ? (
-        <div className={cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_CONTENT)}>
-            {renderState.content}
-        </div>) : null;
+    let content = renderState.content ? <div className={cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_CONTENT)}>{renderState.content}</div> : null;
 
-    const leading = renderState.leading ? (
-        <div className={cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_LEADING)}>
-            {renderState.leading}
-        </div>) : null;
+    const leading = renderState.leading ? <div className={cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_LEADING)}>{renderState.leading}</div> : null;
 
     if (layout.getEditingTab() === node) {
         content = (
@@ -190,8 +186,9 @@ export const TabButton = (props: ITabButtonProps) => {
                 className={cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_TRAILING)}
                 onMouseDown={onCloseMouseDown}
                 onClick={onClose}
-                onTouchStart={onCloseMouseDown}>
-                {(typeof icons.close === "function") ? icons.close(node) : icons.close}
+                onTouchStart={onCloseMouseDown}
+            >
+                {typeof icons.close === "function" ? icons.close(node) : icons.close}
             </div>
         );
     }
@@ -206,6 +203,7 @@ export const TabButton = (props: ITabButtonProps) => {
             onAuxClick={onAuxMouseClick}
             onContextMenu={onContextMenu}
             onTouchStart={onMouseDown}
+            onMouseEnter={handleMouseEnter}
             title={node.getHelpText()}
         >
             {leading}

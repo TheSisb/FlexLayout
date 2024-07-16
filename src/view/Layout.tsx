@@ -98,6 +98,7 @@ export interface ILayoutProps {
     onAuxMouseClick?: NodeMouseEvent;
     onShowOverflowMenu?: ShowOverflowMenuCallback;
     onTabSetPlaceHolder?: TabSetPlaceHolderCallback;
+    onTabMouseEnter?: NodeMouseEvent;
 }
 export interface IFontValues {
     size?: string;
@@ -705,7 +706,16 @@ export class Layout extends React.Component<ILayoutProps, ILayoutState> {
             } else if (child instanceof TabSetNode) {
                 const newPath = path + "/ts" + rowCount++;
                 tabSetComponents.push(
-                    <TabSet key={child.getId()} layout={this} path={newPath} node={child} iconFactory={this.props.iconFactory} titleFactory={this.props.titleFactory} icons={this.icons} />
+                    <TabSet
+                        key={child.getId()}
+                        layout={this}
+                        path={newPath}
+                        node={child}
+                        iconFactory={this.props.iconFactory}
+                        titleFactory={this.props.titleFactory}
+                        icons={this.icons}
+                        onTabMouseEnter={this.props.onTabMouseEnter}
+                    />
                 );
                 this.renderChildren(newPath, child, tabSetComponents, tabComponents, floatingWindows, splitterComponents);
             } else if (child instanceof TabNode) {

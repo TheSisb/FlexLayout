@@ -15,8 +15,9 @@ import { hideElement, isAuxMouseEvent } from "./Utils";
 export interface ITabSetProps {
     layout: ILayoutCallbacks;
     node: TabSetNode;
-    iconFactory?: (node: TabNode) => (React.ReactNode | undefined);
-    titleFactory?: (node: TabNode) => (ITitleObject | React.ReactNode | undefined);
+    iconFactory?: (node: TabNode) => React.ReactNode | undefined;
+    titleFactory?: (node: TabNode) => ITitleObject | React.ReactNode | undefined;
+    onTabMouseEnter?: (node: TabNode, event: React.MouseEvent<HTMLElement, MouseEvent>) => void;
     icons: IIcons;
     editingTab?: TabNode;
     path?: string;
@@ -24,7 +25,7 @@ export interface ITabSetProps {
 
 /** @internal */
 export const TabSet = (props: ITabSetProps) => {
-    const { node, layout, iconFactory, titleFactory, icons, path } = props;
+    const { node, layout, iconFactory, titleFactory, onTabMouseEnter, icons, path } = props;
 
     const toolbarRef = React.useRef<HTMLDivElement | null>(null);
     const overflowbuttonRef = React.useRef<HTMLButtonElement | null>(null);
@@ -39,14 +40,7 @@ export const TabSet = (props: ITabSetProps) => {
             callback(node, event, hiddenTabs, onOverflowItemSelect);
         } else {
             const element = overflowbuttonRef.current!;
-            showPopup(
-                element,
-                hiddenTabs,
-                onOverflowItemSelect,
-                layout,
-                iconFactory,
-                titleFactory,
-            );
+            showPopup(element, hiddenTabs, onOverflowItemSelect, layout, iconFactory, titleFactory);
         }
         event.stopPropagation();
     };
@@ -132,7 +126,7 @@ export const TabSet = (props: ITabSetProps) => {
     let style = node._styleWithPosition();
 
     if (node.getModel().getMaximizedTabset() !== undefined && !node.isMaximized()) {
-        hideElement(style, node.getModel().isUseVisibility())
+        hideElement(style, node.getModel().isUseVisibility());
     }
 
     const tabs = [];
@@ -149,13 +143,13 @@ export const TabSet = (props: ITabSetProps) => {
                     selected={isSelected}
                     iconFactory={iconFactory}
                     titleFactory={titleFactory}
+                    onTabMouseEnter={onTabMouseEnter}
                     icons={icons}
-                />);
-                if (i < node.getChildren().length-1) {
-                    tabs.push(
-                        <div  key={"divider" + i} className={cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER)}></div>
-                    );
-                }
+                />
+            );
+            if (i < node.getChildren().length - 1) {
+                tabs.push(<div key={"divider" + i} className={cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER)}></div>);
+            }
         }
     }
 
@@ -165,7 +159,7 @@ export const TabSet = (props: ITabSetProps) => {
     let headerButtons: React.ReactNode[] = [];
 
     // allow customization of header contents and buttons
-    const renderState : ITabSetRenderValues = { headerContent: node.getName(), stickyButtons, buttons, headerButtons, overflowPosition: undefined };
+    const renderState: ITabSetRenderValues = { headerContent: node.getName(), stickyButtons, buttons, headerButtons, overflowPosition: undefined };
     layout.customizeTabSet(node, renderState);
     const headerContent = renderState.headerContent;
     stickyButtons = renderState.stickyButtons;
@@ -173,45 +167,52 @@ export const TabSet = (props: ITabSetProps) => {
     headerButtons = renderState.headerButtons;
 
     const isTabStretch = node.isEnableSingleTabStretch() && node.getChildren().length === 1;
-    const showClose = (isTabStretch && ((node.getChildren()[0] as TabNode).isEnableClose())) || node.isEnableClose();
+    const showClose = (isTabStretch && (node.getChildren()[0] as TabNode).isEnableClose()) || node.isEnableClose();
 
     if (renderState.overflowPosition === undefined) {
         renderState.overflowPosition = stickyButtons.length;
     }
-    
+
     if (stickyButtons.length > 0) {
         if (tabsTruncated || isTabStretch) {
             buttons = [...stickyButtons, ...buttons];
         } else {
-            tabs.push(<div
-                ref={stickyButtonsRef}
-                key="sticky_buttons_container"
-                onMouseDown={onInterceptMouseDown}
-                onTouchStart={onInterceptMouseDown}
-                onDragStart={(e) => { e.preventDefault() }}
-                className={cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR_STICKY_BUTTONS_CONTAINER)}
-            >
-                {stickyButtons}
-            </div>);
+            tabs.push(
+                <div
+                    ref={stickyButtonsRef}
+                    key="sticky_buttons_container"
+                    onMouseDown={onInterceptMouseDown}
+                    onTouchStart={onInterceptMouseDown}
+                    onDragStart={(e) => {
+                        e.preventDefault();
+                    }}
+                    className={cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR_STICKY_BUTTONS_CONTAINER)}
+                >
+                    {stickyButtons}
+                </div>
+            );
         }
     }
-    
+
     if (hiddenTabs.length > 0) {
         const overflowTitle = layout.i18nName(I18nLabel.Overflow_Menu_Tooltip);
         let overflowContent;
         if (typeof icons.more === "function") {
             overflowContent = icons.more(node, hiddenTabs);
         } else {
-            overflowContent = (<>
-                {icons.more}
-                <div className={cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_OVERFLOW_COUNT)}>{hiddenTabs.length}</div>
-            </>);
+            overflowContent = (
+                <>
+                    {icons.more}
+                    <div className={cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_OVERFLOW_COUNT)}>{hiddenTabs.length}</div>
+                </>
+            );
         }
-        buttons.splice(Math.min(renderState.overflowPosition, buttons.length), 0,
+        buttons.splice(
+            Math.min(renderState.overflowPosition, buttons.length),
+            0,
             <button
                 key="overflowbutton"
                 data-layout-path={path + "/button/overflow"}
-
                 ref={overflowbuttonRef}
                 className={cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR_BUTTON) + " " + cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_OVERFLOW)}
                 title={overflowTitle}
@@ -236,7 +237,7 @@ export const TabSet = (props: ITabSetProps) => {
                 onMouseDown={onInterceptMouseDown}
                 onTouchStart={onInterceptMouseDown}
             >
-                {(typeof icons.popout === "function") ? icons.popout(selectedTabNode) : icons.popout}
+                {typeof icons.popout === "function" ? icons.popout(selectedTabNode) : icons.popout}
             </button>
         );
     }
@@ -254,9 +255,7 @@ export const TabSet = (props: ITabSetProps) => {
                 onMouseDown={onInterceptMouseDown}
                 onTouchStart={onInterceptMouseDown}
             >
-                {node.isMaximized() ?
-                    (typeof icons.restore === "function") ? icons.restore(node) : icons.restore :
-                    (typeof icons.maximize === "function") ? icons.maximize(node) : icons.maximize}
+                {node.isMaximized() ? (typeof icons.restore === "function" ? icons.restore(node) : icons.restore) : typeof icons.maximize === "function" ? icons.maximize(node) : icons.maximize}
             </button>
         );
     }
@@ -274,17 +273,21 @@ export const TabSet = (props: ITabSetProps) => {
                 onMouseDown={onInterceptMouseDown}
                 onTouchStart={onInterceptMouseDown}
             >
-                {(typeof icons.closeTabset === "function") ? icons.closeTabset(node) : icons.closeTabset}
+                {typeof icons.closeTabset === "function" ? icons.closeTabset(node) : icons.closeTabset}
             </button>
         );
     }
 
     const toolbar = (
-        <div key="toolbar" ref={toolbarRef}
+        <div
+            key="toolbar"
+            ref={toolbarRef}
             className={cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR)}
             onMouseDown={onInterceptMouseDown}
             onTouchStart={onInterceptMouseDown}
-            onDragStart={(e) => { e.preventDefault() }}
+            onDragStart={(e) => {
+                e.preventDefault();
+            }}
         >
             {buttons}
         </div>
@@ -308,20 +311,23 @@ export const TabSet = (props: ITabSetProps) => {
     }
 
     if (isTabStretch) {
-        const tabNode = node.getChildren()[0] as TabNode; 
+        const tabNode = node.getChildren()[0] as TabNode;
         if (tabNode.getTabSetClassName() !== undefined) {
             tabStripClasses += " " + tabNode.getTabSetClassName();
         }
     }
 
     if (showHeader) {
-
         const headerToolbar = (
-            <div key="toolbar" ref={toolbarRef}
+            <div
+                key="toolbar"
+                ref={toolbarRef}
                 className={cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR)}
                 onMouseDown={onInterceptMouseDown}
                 onTouchStart={onInterceptMouseDown}
-                onDragStart={(e) => { e.preventDefault() }}
+                onDragStart={(e) => {
+                    e.preventDefault();
+                }}
             >
                 {headerButtons}
             </div>
@@ -339,13 +345,16 @@ export const TabSet = (props: ITabSetProps) => {
         }
 
         header = (
-            <div className={tabHeaderClasses} style={{ height: node.getHeaderHeight() + "px" }}
+            <div
+                className={tabHeaderClasses}
+                style={{ height: node.getHeaderHeight() + "px" }}
                 data-layout-path={path + "/header"}
                 onMouseDown={onMouseDown}
                 onContextMenu={onContextMenu}
                 onClick={onAuxMouseClick}
                 onAuxClick={onAuxMouseClick}
-                onTouchStart={onMouseDown}>
+                onTouchStart={onMouseDown}
+            >
                 <div className={cm(CLASSES.FLEXLAYOUT__TABSET_HEADER_CONTENT)}>{headerContent}</div>
                 {headerToolbar}
             </div>
@@ -354,16 +363,19 @@ export const TabSet = (props: ITabSetProps) => {
 
     const tabStripStyle: { [key: string]: string } = { height: node.getTabStripHeight() + "px" };
     tabStrip = (
-        <div className={tabStripClasses} style={tabStripStyle}
+        <div
+            className={tabStripClasses}
+            style={tabStripStyle}
             data-layout-path={path + "/tabstrip"}
             onMouseDown={onMouseDown}
             onContextMenu={onContextMenu}
             onClick={onAuxMouseClick}
             onAuxClick={onAuxMouseClick}
-            onTouchStart={onMouseDown}>
+            onTouchStart={onMouseDown}
+        >
             <div ref={tabbarInnerRef} className={cm(CLASSES.FLEXLAYOUT__TABSET_TABBAR_INNER) + " " + cm(CLASSES.FLEXLAYOUT__TABSET_TABBAR_INNER_ + node.getTabLocation())}>
                 <div
-                    style={{ left: position, width: (isTabStretch? "100%": "10000px")}}
+                    style={{ left: position, width: isTabStretch ? "100%" : "10000px" }}
                     className={cm(CLASSES.FLEXLAYOUT__TABSET_TABBAR_INNER_TAB_CONTAINER) + " " + cm(CLASSES.FLEXLAYOUT__TABSET_TABBAR_INNER_TAB_CONTAINER_ + node.getTabLocation())}
                 >
                     {tabs}
@@ -383,27 +395,30 @@ export const TabSet = (props: ITabSetProps) => {
         }
     }
 
-    const center = <div className={cm(CLASSES.FLEXLAYOUT__TABSET_CONTENT)}>
-        {placeHolder}
-    </div>
+    const center = <div className={cm(CLASSES.FLEXLAYOUT__TABSET_CONTENT)}>{placeHolder}</div>;
 
     var content;
     if (node.getTabLocation() === "top") {
-        content = <>{header}{tabStrip}{center}</>;
+        content = (
+            <>
+                {header}
+                {tabStrip}
+                {center}
+            </>
+        );
     } else {
-        content = <>{header}{center}{tabStrip}</>;
+        content = (
+            <>
+                {header}
+                {center}
+                {tabStrip}
+            </>
+        );
     }
 
     return (
-        <div ref={selfRef}
-            dir="ltr"
-            data-layout-path={path}
-            style={style}
-            className={cm(CLASSES.FLEXLAYOUT__TABSET)}
-            onWheel={onMouseWheel}>
+        <div ref={selfRef} dir="ltr" data-layout-path={path} style={style} className={cm(CLASSES.FLEXLAYOUT__TABSET)} onWheel={onMouseWheel}>
             {content}
         </div>
     );
 };
-
-
